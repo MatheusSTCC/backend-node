@@ -144,7 +144,7 @@ class UsuarioService {
       // Atualiza os dados do usuário na tabela Usuario
       await sql.query`
         UPDATE Usuario 
-        SET nome = ${nome}, email = ${email}, foto = ${foto}
+        SET nome = ${nome}, email = ${email}
         WHERE id = ${id}`;
 
       // Atualiza os dados do mecânico na tabela Mecanico
