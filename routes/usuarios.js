@@ -5,7 +5,9 @@ const router = express.Router();
 const multer = require("multer");
 const usuarioController = require("../controllers/usuarioController");
 
-const upload = multer({});
+const storage = multer.memoryStorage();
+const upload = multer({ dest: "./public/data/uploads/", storage: storage });
+
 router.get("/findAll", usuarioController.findAll);
 router.get("/findById/:id", usuarioController.findById);
 router.get("/findByEmail", usuarioController.findByEmail);
