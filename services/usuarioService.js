@@ -23,7 +23,10 @@ class UsuarioService {
   // Buscar todos os usuários
   async findAll() {
     await this.connect();
-    const result = await sql.query("SELECT * FROM Usuario");
+    const result = await sql.query(
+      "SELECT * FROM Usuario WHERE nivelAcesso = 'Mecanico'"
+    );
+
     return result.recordset; // Retorna o conjunto de registros
   }
 
@@ -51,7 +54,7 @@ class UsuarioService {
     if (!usuarioExistente) {
       const senhaHash = await bcrypt.hash(usuario.senha, 10);
       const statusUsuario = "ATIVO";
-      const nivelAcesso = "MECANICO";
+      const nivelAcesso = usuario?.nivelAcesso || "MECANICO";
       const result = await sql.query`DECLARE @Id INT; 
         INSERT INTO Usuario (nome, email, senha, nivelAcesso, statusUsuario) VALUES (${usuario.nome},${usuario.email}, ${senhaHash}, ${nivelAcesso}, ${statusUsuario}) 
         SET @Id = SCOPE_IDENTITY();
@@ -73,18 +76,28 @@ class UsuarioService {
   // Autenticar usuário
   async signin(email, senha) {
     const usuario = await this.findByEmail(email);
-    if (usuario && usuario.statusUsuario !== "INATIVO") {
-      const match = await bcrypt.compare(senha, usuario.senha);
-      if (match) {
-        console.log(usuario);
-        // const mecanicoService
-        const mecanico = await this.mecanicoService.findById(usuario.id);
-        usuario.mecanico = mecanico;
 
-        return usuario;
-      }
+    // Verifica se o usuário existe
+    if (!usuario) {
+      throw new Error("Usuário não encontrado.");
     }
-    return null;
+
+    // Verifica se o status do usuário é INATIVO
+    if (usuario.statusUsuario === "INATIVO") {
+      throw new Error("Usuário inativo. Não é possível fazer login.");
+    }
+
+    // Verifica a correspondência da senha
+    const match = await bcrypt.compare(senha, usuario.senha);
+    if (!match) {
+      throw new Error("Senha incorreta.");
+    }
+
+    // Se tudo estiver correto, busca os dados do mecânico
+    const mecanico = await this.mecanicoService.findById(usuario.id);
+    usuario.mecanico = mecanico;
+
+    return usuario;
   }
 
   // Inativar usuário
@@ -142,16 +155,45 @@ class UsuarioService {
       // Extrai os dados do objeto fornecido
       const { nome, email, descricao, telefone, cidade } = dados;
       // Atualiza os dados do usuário na tabela Usuario
-      await sql.query`
-        UPDATE Usuario 
-        SET nome = ${nome}, email = ${email}
-        WHERE id = ${id}`;
+      if (foto) {
+        // Atualiza com a foto se ela estiver presente
+        await sql.query`
+            UPDATE Usuario 
+            SET nome = ${nome}, email = ${email}, foto = ${foto}
+            WHERE id = ${id}`;
+      } else {
+        // Atualiza sem a foto se ela não estiver presente
+        await sql.query`
+            UPDATE Usuario 
+            SET nome = ${nome}, email = ${email}
+            WHERE id = ${id}`;
+      }
 
       // Atualiza os dados do mecânico na tabela Mecanico
       await sql.query`
         UPDATE Mecanico 
         SET descricao = ${descricao}, telefone = ${telefone}, cidade = ${cidade} 
         WHERE usuario_id = ${id}`;
+
+      return "Dados atualizados com sucesso";
+    }
+
+    return null;
+  }
+  async alterarDadosAdmin(id, dados) {
+    // Encontra o usuário pelo ID
+    const usuario = await this.findById(id);
+    if (usuario) {
+      // Extrai os dados do objeto fornecido
+      const { nome, email, nivelAcesso, statusUsuario } = dados;
+
+      // Atualiza sem a foto se ela não estiver presente
+      await sql.query`
+            UPDATE Usuario 
+            SET nome = ${nome}, email = ${email}, nivelAcesso = ${nivelAcesso}, statusUsuario = ${statusUsuario}  
+            WHERE id = ${id} `;
+
+      // Atualiza os dados do mecânico na tabela Mecanico
 
       return "Dados atualizados com sucesso";
     }

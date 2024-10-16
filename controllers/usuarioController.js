@@ -64,7 +64,7 @@ const signin = async (req, res) => {
       res.status(401).json({ message: "Dados incorretos!" });
     }
   } catch (error) {
-    res.status(500).json({ message: "Erro ao fazer login", error });
+    res.status(500).json({ message: "Erro ao fazer login " + error.message });
   }
 };
 
@@ -115,9 +115,30 @@ const alterarSenha = async (req, res) => {
 const alterarDados = async (req, res) => {
   const { id } = req.params;
   req.body = JSON.parse(req.body.dados);
-  // const fileBuffer = req.file.buffer;
+  const fileBuffer = req.file ? req.file.buffer : null;
   try {
-    const message = await usuarioServiceInstanced.alterarDados(id, req.body);
+    const message = await usuarioServiceInstanced.alterarDados(
+      id,
+      req.body,
+      fileBuffer
+    );
+    if (message) {
+      res.status(203).json({ message });
+    } else {
+      res.status(404).json({ message: "Usuário não encontrado" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Erro ao alterar dados", error });
+  }
+};
+const alterarDadosAdmin = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const message = await usuarioServiceInstanced.alterarDadosAdmin(
+      id,
+      req.body
+    );
     if (message) {
       res.status(203).json({ message });
     } else {
@@ -139,4 +160,5 @@ module.exports = {
   reativar,
   alterarSenha,
   alterarDados,
+  alterarDadosAdmin,
 };

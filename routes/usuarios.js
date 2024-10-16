@@ -21,5 +21,7 @@ router.put(
   upload.single("file"),
   usuarioController.alterarDados
 );
+router.put("/admin/alterar/:id", usuarioController.alterarDadosAdmin);
+router.post("/admin/create", usuarioController.create);
 
 module.exports = router;
