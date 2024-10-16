@@ -115,9 +115,9 @@ const alterarSenha = async (req, res) => {
 const alterarDados = async (req, res) => {
   const { id } = req.params;
   req.body = JSON.parse(req.body.dados);
-  const fileBuffer = req.file.buffer;
+  // const fileBuffer = req.file.buffer;
   try {
-    const message = await usuarioServiceInstanced.alterarDados(id, req.body, fileBuffer);
+    const message = await usuarioServiceInstanced.alterarDados(id, req.body);
     if (message) {
       res.status(203).json({ message });
     } else {
